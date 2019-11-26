@@ -352,6 +352,7 @@ void terminate_bro()
 	input_mgr->Terminate();
 	thread_mgr->Terminate();
 	broker_mgr->Terminate();
+	dns_mgr->Terminate();
 
 	mgr.Drain();
 
