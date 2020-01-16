@@ -52,7 +52,8 @@ public:
 	 *
 	 * @return A value for the next time that the source thinks the
 	 * poll should time out in seconds from the current time. Return
-	 * -1 if this source should not be considered.
+	 * -1 if this source should not be considered. This should be a
+	 * a value relative to network_time, not an absolute time.
 	 */
 	virtual double GetNextTimeout() = 0;
 
