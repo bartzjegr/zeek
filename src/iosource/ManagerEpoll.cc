@@ -21,6 +21,8 @@
 
 using namespace iosource;
 
+static double last_timeout = -1.0;
+
 Manager::Manager() : ManagerBase()
 	{
 	DBG_LOG(DBG_MAINLOOP, "Using epoll main loop");
@@ -95,18 +97,33 @@ void Manager::Poll(std::vector<IOSource*>* ready, double timeout, IOSource* time
 	// timeout. That deactivates the timer. That means if the timeout
 	// passed in was zero, we need to pass that zero down to poll().
 	// Otherwise, set it to -1 and let timerfd do its thing.
+	//
+	// On top of all of that, calling timerfd_settime can be a fairly
+	// expensive operation and calling it a lot can be even more so. There
+	// is no reason to call it if the timeout hasn't changed, so avoid
+	// doing so.
 	int poll_timeout;
 	if ( timeout != 0 )
 		{
 		struct itimerspec new_timeout = { 0, 0 };
-		ConvertTimeout(timeout, new_timeout.it_value);
-		timerfd_settime(timerfd, 0, &new_timeout, NULL);
+		if ( last_timeout != ::network_time + timeout )
+			{
+			last_timeout = ::network_time + timeout;
+			ConvertTimeout(last_timeout, new_timeout.it_value);
+			timerfd_settime(timerfd, TFD_TIMER_ABSTIME, &new_timeout, NULL);
+			}
+
 		poll_timeout = -1;
 		}
 	else
 		{
-		struct itimerspec new_timeout = { 0, 0 };
-		timerfd_settime(timerfd, 0, &new_timeout, NULL);
+		if ( last_timeout != 0.0 )
+			{
+			last_timeout = 0;
+			struct itimerspec new_timeout = { 0, 0 };
+			timerfd_settime(timerfd, 0, &new_timeout, NULL);
+			}
+
 		poll_timeout = 0;
 		}
 
@@ -135,6 +152,7 @@ void Manager::Poll(std::vector<IOSource*>* ready, double timeout, IOSource* time
 				ready->clear();
 				if ( timeout_src )
 					ready->push_back(timeout_src);
+				last_timeout = -1;
 				break;
 				}
 			else
