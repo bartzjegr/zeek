@@ -364,8 +364,8 @@ void net_get_final_stats()
 		{
 		iosource::PktSrc::Stats s;
 		ps->Statistics(&s);
-		reporter->Info("%" PRIu64 " packets received on interface %s, %" PRIu64 " dropped",
-			s.received, ps->Path().c_str(), s.dropped);
+		reporter->Info("%" PRIu64 " packets received on interface %s, %" PRIu64 " (%.2f%%) dropped",
+			       s.received, ps->Path().c_str(), s.dropped, ((double)s.dropped / ((double)s.received + (double)s.dropped)) * 100.0);
 		}
 	}
 
