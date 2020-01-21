@@ -90,6 +90,11 @@ public:
 	const char* ErrorMsg() const;
 
 	/**
+	 * Returns true if this is a packet source.
+	 */
+	bool IsPacketSource() const override { return true; }
+
+	/**
 	 * In pseudo-realtime mode, returns the logical timestamp of the
 	 * current packet. Undefined if not running pseudo-realtime mode.
 	 */

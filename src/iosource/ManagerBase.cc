@@ -19,6 +19,10 @@
 
 #define DEFAULT_PREFIX "pcap"
 
+// This is the number of times through the loop that we will skip trying to call Poll()
+// if there is already packet data ready to process.
+static constexpr int POLL_FREQUENCY = 10;
+
 using namespace iosource;
 
 ManagerBase::WakeupHandler::WakeupHandler()
@@ -108,6 +112,9 @@ void ManagerBase::FindReadySources(std::vector<IOSource*>* ready)
 	double timeout = -1;
 	IOSource* timeout_src = nullptr;
 
+	++poll_counter;
+	bool time_to_poll = (poll_counter & POLL_FREQUENCY) == 0;
+
 	// Find the source with the next timeout value.
 	for ( auto src : sources )
 		{
@@ -129,13 +136,17 @@ void ManagerBase::FindReadySources(std::vector<IOSource*>* ready)
 					return;
 					}
 				}
+
+			if ( ! time_to_poll && src->src->IsPacketSource() && ((PktSrc*)src->src)->IsLive() )
+				ready->push_back(src->src);
 			}
 		}
 
 	zero_timeout_count = 1;
 
 	// Call the appropriate poll method for what's available on the operating system.
-	Poll(ready, timeout, timeout_src);
+	if ( ready->empty() )
+		Poll(ready, timeout, timeout_src);
 	}
 
 void ManagerBase::ConvertTimeout(double timeout, struct timespec& spec)

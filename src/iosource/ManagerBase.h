@@ -200,6 +200,7 @@ private:
 	int dont_counts = 0;
 	int zero_timeout_count = 0;
 	WakeupHandler* wakeup = nullptr;
+	int poll_counter = 0;
 };
 
 }
